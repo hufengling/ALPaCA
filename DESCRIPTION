@@ -1,0 +1,32 @@
+Package: ALPaCA
+Title: Runs Automated Lesion, PRL, and CVS Analysis network (ALPaCA)
+Version: 0.0.0.9000
+Authors@R: 
+    person("Fengling", "Hu", , "fengling.hu@pennmedicine.upenn.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-1081-5038"))
+Description: Functions to pre-process multi-modal data and run pre-processed data through a pre-trained convolutional neural network for predicting standard lesions, PRLs, and CVS.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+URL: https://github.com/hufengling/ALPaCA
+Imports: 
+    ANTsR (>= 0.5.6.0.0),
+    ANTsRCore (>= 0.7.4),
+    extrantsr (>= 3.9.13),
+    fslr,
+    mimosa (>= 0.5.8),
+    neurobase (>= 1.32.1),
+    oro.nifti (>= 0.11.0),
+    Rfast,
+    torch,
+    WhiteStripe
+Remotes: 
+    stnava/ANTsR,
+    ANTsX/ANTsRCore,
+    muschellij2/extrantsr,
+    avalcarcel9/mimosa,
+    muschellij2/neurobase,
+    bjw34032/oro.nifti
+Depends: 
+    R (>= 2.10)
