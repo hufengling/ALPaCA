@@ -13,6 +13,7 @@ extract_patch(
   epi,
   phase,
   labeled_candidates,
+  eroded_candidates,
   rotate_patches
 )
 }
@@ -32,6 +33,8 @@ extract_patch(
 \item{phase}{antsImage representing the phase MRI image.}
 
 \item{labeled_candidates}{antsImage representing labeled candidates for lesion regions.}
+
+\item{eroded_candidates}{antsImage representing eroded candidates for lesion regions}
 
 \item{rotate_patches}{A logical flag indicating whether to rotate the extracted patches.}
 }
@@ -53,6 +56,7 @@ extracted_patch <- extract_patch(candidate_id = 1,
                                  epi = epi_image,
                                  phase = phase_image,
                                  labeled_candidates = labeled_candidates_image,
+                                 eroded_candidates = eroded_candidates_image,
                                  rotate_patches = FALSE)
 
 # Extract a patch and apply random rotation.
@@ -64,6 +68,7 @@ extracted_patch <- extract_patch(candidate_id = 2,
                                  epi = epi_image,
                                  phase = phase_image,
                                  labeled_candidates = labeled_candidates_image,
+                                 eroded_candidates = eroded_candidates_image,
                                  rotate_patches = TRUE)
 }
 }

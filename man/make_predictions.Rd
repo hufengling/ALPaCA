@@ -11,6 +11,7 @@ make_predictions(
   epi = NULL,
   phase = NULL,
   labeled_candidates = NULL,
+  eroded_candidates = NULL,
   lesion_priority = c("Youden's J", "Specificity", "Sensitivity"),
   prl_priority = c("Youden's J", "Specificity", "Sensitivity"),
   cvs_priority = c("Youden's J", "Specificity", "Sensitivity"),
@@ -34,6 +35,8 @@ make_predictions(
 \item{phase}{antsImage or file path to .nii.gz representing the phase MRI image.}
 
 \item{labeled_candidates}{antsImage or file path to .nii.gz representing labeled candidates for lesion regions.}
+
+\item{eroded_candidates}{antsImage or file path to .nii.gz representing eroded candidates for lesion regions.}
 
 \item{lesion_priority}{A character vector specifying priority for lesion prediction thresholds -- Youden's J, Specificity, Sensitivity. Thresholds are based on training set ROC curves from CV models. Default priority is Youden's J, with sensitivity \eqn{\approx} 0.83 and specificity \eqn{\approx} 0.86. 'Specificity' prioritizes specificity 3 times more than sensitivity, with sensitivity \eqn{\approx} 0.69 and specificity \eqn{\approx} 0.94. 'Sensitivity' prioritizes sensitivity 3 times more than specificity, with sensitivity \eqn{\approx} 0.92 and specificity \eqn{\approx} 0.70.}
 

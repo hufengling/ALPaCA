@@ -4,12 +4,14 @@
 \alias{antsSameMetadata}
 \title{Check if Two ANTs Images Have the Same Metadata}
 \usage{
-antsSameMetadata(ants1, ants2)
+antsSameMetadata(ants1, ants2, tolerance = 1e-06)
 }
 \arguments{
 \item{ants1}{An ANTs image object.}
 
 \item{ants2}{Another ANTs image object.}
+
+\item{tolerance}{Tolerance for differences in metadata}
 }
 \value{
 A logical value indicating whether the two ANTs images have the same metadata. Returns TRUE if they match and FALSE otherwise.
