@@ -9,8 +9,6 @@
 #'
 #' @return A tensor representing the rotated patch.
 #'
-#' @export
-#'
 #' @import torch
 #'
 #' @examples \dontrun{

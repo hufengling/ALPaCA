@@ -15,7 +15,6 @@
 #'   probmap = lesion.probs, binmap = lesion.probs > 0.30
 #' )
 #' }
-#' @export
 #' @references J.D. Dworkin, K.A. Linn, I. Oguz, G.M. Fleishman, R. Bakshi, G. Nair, P.A. Calabresi, R.G. Henry, J. Oh, N. Papinutto, D. Pelletier, W. Rooney, W. Stern, N.L. Sicotte, D.S. Reich, R.T. Shinohara. An automated statistical technique for counting distinct multiple sclerosis lesions. American Journal of Neuroradiology, 2018; 39, 626-633.
 lesion_centers <- function(prob_map, bin_map,
                            minCenterSize = 10, radius = 1) {

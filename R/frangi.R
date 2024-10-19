@@ -19,7 +19,6 @@
 #'   color = "dark", parallel = TRUE, cores = 4
 #' )
 #' }
-#' @export
 #' @references A.F. Frangi, W.J. Niessen, K.L. Vincken, M.A. Viergever (1998). Multiscale vessel enhancement filtering. In Medical Image Computing and Computer-Assisted Intervention - MICCAI'98, W.M. Wells, A. Colchester and S.L. Delp (Eds.), Lecture Notes in Computer Science, vol. 1496 - Springer Verlag, Berlin, Germany, pp. 130-137.
 frangi <- function(image, mask, radius = 1, color = "dark") {
   eigvals <- hessian3D(image, mask, radius)

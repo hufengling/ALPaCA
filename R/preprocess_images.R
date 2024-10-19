@@ -135,16 +135,20 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   prob_05 <- antsImageClone(prob > 0.05)
   if (sum(prob_05) == 0) {
     prob_05_labeled <- antsImageClone(prob_05)
+    prob_05_erode <- antsImageClone(prob_05)
   } else {
     prob_05_labeled <- oro2ants(label_lesion(prob, prob_05, mincluster = 30))
+    prob_05_erode <- iMath(prob_05_labeled, "GE", 1)
   }
   antsImageWrite(prob_05_labeled, file.path(output_dir, "labeled_candidates.nii.gz"))
+  antsImageWrite(prob_05_erode, file.path(output_dir, "eroded_candidates.nii.gz"))
 
   return(list(t1 = t1_final,
               flair = flair_final,
               epi = epi_final,
               phase = phase_final,
               prob_map = prob,
-              labeled_candidates = prob_05_labeled)
+              labeled_candidates = prob_05_labeled,
+              eroded_candidates = prob_05_erode)
   )
 }

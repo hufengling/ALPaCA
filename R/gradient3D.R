@@ -13,7 +13,6 @@
 #' epi <- readnii("path/to/epi")
 #' gradients <- gradient3D(image = epi, which = "all")
 #' }
-#' @export
 #' @importFrom oro.nifti is.nifti
 gradient3D <- function(image, mask = NULL, which = "all", radius = 1) {
   if (radius >= min(dim(image))) {

@@ -6,8 +6,6 @@
 #' @param mincluster The minimum cluster size for lesions (default is 100).
 #'
 #' @return A labeled image with each lesion identified. Confluent lesions are split
-#' @export
-#'
 #' @examples \dontrun{
 #' prob_map <- check_ants("prob_map.nii.gz")
 #' mimosa_mask <- check_ants("mimosa_mask.nii.gz")

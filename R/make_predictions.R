@@ -8,6 +8,7 @@
 #' @param epi antsImage or file path to .nii.gz representing the EPI MRI image.
 #' @param phase antsImage or file path to .nii.gz representing the phase MRI image.
 #' @param labeled_candidates antsImage or file path to .nii.gz representing labeled candidates for lesion regions.
+#' @param eroded_candidates antsImage or file path to .nii.gz representing eroded candidates for lesion regions.
 #' @param lesion_priority A character vector specifying priority for lesion prediction thresholds -- Youden's J, Specificity, Sensitivity. Thresholds are based on training set ROC curves from CV models. Default priority is Youden's J, with sensitivity \eqn{\approx} 0.83 and specificity \eqn{\approx} 0.86. 'Specificity' prioritizes specificity 3 times more than sensitivity, with sensitivity \eqn{\approx} 0.69 and specificity \eqn{\approx} 0.94. 'Sensitivity' prioritizes sensitivity 3 times more than specificity, with sensitivity \eqn{\approx} 0.92 and specificity \eqn{\approx} 0.70.
 #' @param prl_priority A character vector specifying priority for PRL prediction thresholds. Same options and default as lesion_priority. For Youden's J, sensitivity \eqn{\approx} 0.76 and specificity \eqn{\approx} 0.83. For Specificity, sensitivity \eqn{\approx} 0.63 and specificity \eqn{\approx} 0.90. For Sensitivity, sensitivity \eqn{\approx} 0.86 and specificity \eqn{\approx} 0.64.
 #' @param cvs_priority A character vector specifying priority for CVS prediction thresholds.Same options and default as lesion_priority. For Youden's J, sensitivity \eqn{\approx} 0.81 and specificity \eqn{\approx} 0.65. For Specificity, sensitivity \eqn{\approx} 0.27 and specificity \eqn{\approx} 0.91. For Sensitivity, sensitivity \eqn{\approx} 0.91 and specificity \eqn{\approx} 0.47.
@@ -45,7 +46,8 @@
 #' }
 
 make_predictions <- function(ants_list = NULL,
-                             t1 = NULL, flair = NULL, epi = NULL, phase = NULL, labeled_candidates = NULL,
+                             t1 = NULL, flair = NULL, epi = NULL, phase = NULL,
+                             labeled_candidates = NULL, eroded_candidates = NULL,
                              lesion_priority = c("Youden's J", "Specificity", "Sensitivity"),
                              prl_priority = c("Youden's J", "Specificity", "Sensitivity"),
                              cvs_priority = c("Youden's J", "Specificity", "Sensitivity"),
@@ -58,8 +60,9 @@ make_predictions <- function(ants_list = NULL,
             is.null(flair),
             is.null(epi),
             is.null(phase),
-            is.null(labeled_candidates))) {
-      stop("Images must either be provided via ants_list, or images must be provided for each of t1, flair, epi, phase, and labeled_candidates")
+            is.null(labeled_candidates),
+            is.null(eroded_candidates))) {
+      stop("Images must either be provided via ants_list, or images must be provided for each of t1, flair, epi, phase, labeled_candidates, and eroded_candidates")
     }
 
     t1 <- check_ants(t1)
@@ -67,23 +70,26 @@ make_predictions <- function(ants_list = NULL,
     epi <- check_ants(epi)
     phase <- check_ants(phase)
     labeled_candidates <- check_ants(labeled_candidates)
+    eroded_candidates <- check_ants(eroded_candidates)
   }
 
   if (!is.null(ants_list)) { # Make sure all images are provided
-    if (!all(c("t1", "flair", "epi", "phase", "labeled_candidates") %in% names(ants_list))) {
-      stop("If images are provided via ants_list, ants_list must be a named list with items: t1, flair, epi, phase, labeled_candidates. Output from preprocess_images() function can be directly used with return_image = TRUE.")
+    if (!all(c("t1", "flair", "epi", "phase", "labeled_candidates", "eroded_candidates") %in% names(ants_list))) {
+      stop("If images are provided via ants_list, ants_list must be a named list with items: t1, flair, epi, phase, labeled_candidates, and eroded_candidates. Output from preprocess_images() function can be directly used with return_image = TRUE.")
     }
     t1 <- check_ants(ants_list$t1)
     flair <- check_ants(ants_list$flair)
     epi <- check_ants(ants_list$epi)
     phase <- check_ants(ants_list$phase)
     labeled_candidates <- check_ants(ants_list$labeled_candidates)
+    eroded_candidates <- check_ants(ants_list$eroded_candidates)
   }
 
   if (!all(antsSameMetadata(t1, flair), # Make sure all images are registered
            antsSameMetadata(t1, epi),
            antsSameMetadata(t1, phase),
-           antsSameMetadata(t1, labeled_candidates))) {
+           antsSameMetadata(t1, labeled_candidates),
+           antsSameMetadata(t1, eroded_candidates))) {
     stop("All images provided must be registered to the same space. Please run preprocess_images()")
   }
 
@@ -122,7 +128,7 @@ make_predictions <- function(ants_list = NULL,
   std_tensor <- torch_zeros_like(prediction_tensor)
 
   if (verbose) {
-    print("Running patches through ALPaCANet")
+    print("Running patches through ALPaCA")
   }
   for (candidate_id in 1:n_lesions) {
     if (verbose) {
@@ -167,6 +173,7 @@ make_predictions <- function(ants_list = NULL,
                                                   ends[patch_id, ],
                                                   t1, flair, epi, phase,
                                                   labeled_candidates,
+                                                  eroded_candidates,
                                                   rotate_patches = rotate_patches)
     }
 

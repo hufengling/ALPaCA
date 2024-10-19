@@ -3,8 +3,6 @@
 #' @param lesion_mask Lesion mask.
 #' @param centers Lesion center map. Provided by lesiontools::lesion_centers().
 #'
-#' @export
-#'
 #' @import Rfast
 #' @return A NIfTI with each lesion assigned to its closest lesion center
 get_lesion_labels <- function(lesion_mask, centers) {

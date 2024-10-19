@@ -13,7 +13,6 @@
 #' mask <- epi != 0
 #' hesseigs <- hessian3D(image = epi, mask = mask)
 #' }
-#' @export
 hessian3D <- function(image, mask, radius = 1) {
   print("Getting derivatives")
   # can avoid calculating some derivatives because of symmetrical Hessian

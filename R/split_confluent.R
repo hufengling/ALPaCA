@@ -8,7 +8,6 @@
 #' @param lesion_center_image The image containing lesion center information.
 #'
 #' @return A labeled image with split lesions.
-#' @export
 #'
 #' @examples \dontrun{
 #' labeled_image <- check_ants("labeled_image.nii.gz")
