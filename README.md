@@ -1,4 +1,5 @@
-# ALPaCA
+# Automated Segmentation of Multiple Sclerosis Lesions, Paramagnetic Rims, and Central Vein Sign on MRI Provides Reliable Diagnostic Biomarkers
+
 --------
 **Maintainer**: Fengling Hu, fengling.hu@pennmedicine.upenn.edu
 
@@ -9,9 +10,9 @@
 <div id='id-section1'/>
 
 ## 1. Installation
-The R package uploaded here does not contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from the following link to **box** through the University of Pennsylvania.
+The R package uploaded here does not contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from the following DOI link to **Zenodo**:
 
-https://upenn.box.com/s/ig78yhbbbcv5iz44nuojb7vgfud90v83
+10.5281/zenodo.17215591
 
 Once downloaded, please unzip the "ALPaCA.zip" package. Then, the package can be installed in R using the following command.
 
