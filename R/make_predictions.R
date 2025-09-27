@@ -9,6 +9,7 @@
 #' @param phase antsImage or file path to .nii.gz representing the phase MRI image.
 #' @param labeled_candidates antsImage or file path to .nii.gz representing labeled candidates for lesion regions.
 #' @param eroded_candidates antsImage or file path to .nii.gz representing eroded candidates for lesion regions.
+#' @param output_dir Directory where results will be saved.
 #' @param lesion_priority A character vector specifying priority for lesion prediction thresholds -- Youden's J, Specificity, Sensitivity. Thresholds are based on training set ROC curves from CV models. Default priority is Youden's J, with sensitivity \eqn{\approx} 0.83 and specificity \eqn{\approx} 0.86. 'Specificity' prioritizes specificity 3 times more than sensitivity, with sensitivity \eqn{\approx} 0.69 and specificity \eqn{\approx} 0.94. 'Sensitivity' prioritizes sensitivity 3 times more than specificity, with sensitivity \eqn{\approx} 0.92 and specificity \eqn{\approx} 0.70.
 #' @param prl_priority A character vector specifying priority for PRL prediction thresholds. Same options and default as lesion_priority. For Youden's J, sensitivity \eqn{\approx} 0.76 and specificity \eqn{\approx} 0.83. For Specificity, sensitivity \eqn{\approx} 0.63 and specificity \eqn{\approx} 0.90. For Sensitivity, sensitivity \eqn{\approx} 0.86 and specificity \eqn{\approx} 0.64.
 #' @param cvs_priority A character vector specifying priority for CVS prediction thresholds.Same options and default as lesion_priority. For Youden's J, sensitivity \eqn{\approx} 0.81 and specificity \eqn{\approx} 0.65. For Specificity, sensitivity \eqn{\approx} 0.27 and specificity \eqn{\approx} 0.91. For Sensitivity, sensitivity \eqn{\approx} 0.91 and specificity \eqn{\approx} 0.47.
@@ -48,6 +49,7 @@
 make_predictions <- function(ants_list = NULL,
                              t1 = NULL, flair = NULL, epi = NULL, phase = NULL,
                              labeled_candidates = NULL, eroded_candidates = NULL,
+                             output_dir = NULL,
                              lesion_priority = c("Youden's J", "Specificity", "Sensitivity"),
                              prl_priority = c("Youden's J", "Specificity", "Sensitivity"),
                              cvs_priority = c("Youden's J", "Specificity", "Sensitivity"),
@@ -85,13 +87,13 @@ make_predictions <- function(ants_list = NULL,
     eroded_candidates <- check_ants(ants_list$eroded_candidates)
   }
 
-  if (!all(antsSameMetadata(t1, flair), # Make sure all images are registered
-           antsSameMetadata(t1, epi),
-           antsSameMetadata(t1, phase),
-           antsSameMetadata(t1, labeled_candidates),
-           antsSameMetadata(t1, eroded_candidates))) {
-    stop("All images provided must be registered to the same space. Please run preprocess_images()")
-  }
+  #if (!all(antsSameMetadata(t1, flair), # Make sure all images are registered
+  #         antsSameMetadata(t1, epi),
+  #         antsSameMetadata(t1, phase),
+  #         antsSameMetadata(t1, labeled_candidates),
+  #         antsSameMetadata(t1, eroded_candidates))) {
+  #  stop("All images provided must be registered to the same space. Please run preprocess_images()")
+  #}
 
   # Make sure priorities are understood
   lesion_priority <- match.arg(lesion_priority, c("Youden's J", "Specificity", "Sensitivity"))
@@ -169,8 +171,12 @@ make_predictions <- function(ants_list = NULL,
     all_patch <- torch_zeros(c(max_coords, 4, 24, 24, 24)) # Pre-allocate memory
     for (patch_id in 1:max_coords) {
       all_patch[patch_id, , , ,] <- extract_patch(candidate_id,  # Extract patches centered at the candidate_coords above. Rotate and flip patches if desired to decrease dependency
-                                                  starts[patch_id, ],
-                                                  ends[patch_id, ],
+                                                  # 6/12/25 - EAH
+                                                  # starts[patch_id, ] and ends[patch_id, ] need to be numeric
+                                                  #starts[patch_id, ],
+                                                  #ends[patch_id, ],
+                                                  as.numeric(starts[patch_id, ]),
+                                                  as.numeric(ends[patch_id, ]),
                                                   t1, flair, epi, phase,
                                                   labeled_candidates,
                                                   eroded_candidates,
@@ -269,18 +275,46 @@ make_predictions <- function(ants_list = NULL,
     }
   }
 
+  ## 6/16/25 - EAH
+  # saving alpaca_mask, raw probability images, and prediction outputs
+  antsImageWrite(alpaca_mask, file.path(output_dir, "alpaca_mask.nii.gz"))
+
+  if (return_raw_probabilities) {
+    antsImageWrite(lesion_prob_image, file.path(output_dir, "lesion_prob.nii.gz"))
+    antsImageWrite(prl_prob_image, file.path(output_dir, "prl_prob.nii.gz"))
+    antsImageWrite(cvs_prob_image, file.path(output_dir, "cvs_prob.nii.gz"))
+  }
+
+  #predictions = (binary_predictions == 0) * 1 # Convert back to 0s and 1s
+  #write.csv(predictions, file.path(output_dir, "predictions.csv"))
+
+  ## 6/27/25 - EAH 
+  ## this is doing the inverse of what we want - 0s are changing to 1 and 1s are changing to 0
+  #write.csv((binary_predictions == 0) * 1, file.path(output_dir, "predictions.csv"))
+  write.csv((binary_predictions != 0) * 1, file.path(output_dir, "predictions.csv"))
+  write.csv(predictions, file.path(output_dir, "probabilities.csv"))  # Assuming probabilities are the same here
+  write.csv(std, file.path(output_dir, "prediction_uncertainties.csv"))
+
+
   if (return_raw_probabilities) {
     return(list(alpaca_mask = alpaca_mask,
                 raw_probabilities = list(lesion_probs = lesion_prob_image,
                                          prl_probs = prl_prob_image,
                                          cvs_probs = cvs_prob_image),
-                predictions = (binary_predictions == 0) * 1, # Convert back to 0s and 1s
+                ## 6/27/25 - EAH 
+                ## this conversion is doing the inverse of what we want - 0s are changing to 1 and 1s are changing to 0
+                #predictions = (binary_predictions == 0) * 1, # Convert back to 0s and 1s
+                predictions = (binary_predictions != 0) * 1, # Convert back to 0s and 1s
                 probabilities = predictions,
                 prediction_uncertainties = std))
   }
 
   return(list(alpaca_mask = alpaca_mask,
-              predictions = (binary_predictions == 0) * 1, # Convert back to 0s and 1s
+              ## 6/27/25 - EAH 
+              ## this conversion is doing the inverse of what we want - 0s are changing to 1 and 1s are changing to 0
+              #predictions = (binary_predictions == 0) * 1, # Convert back to 0s and 1s
+              predictions = (binary_predictions != 0) * 1, # Convert back to 0s and 1s
               probabilities = predictions,
               prediction_uncertainties = std))
+
 }

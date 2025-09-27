@@ -49,25 +49,48 @@ extract_patch <- function(candidate_id, patch_starts, patch_ends,
                           labeled_candidates,
                           eroded_candidates,
                           rotate_patches) {
-  lesion_mask <- labeled_candidates[patch_starts[1]:patch_ends[1],
+  # 6/13/25 - EAH
+  # labeled candidates needs to be array
+  #lesion_mask <- labeled_candidates[patch_starts[1]:patch_ends[1],
+  #                                  patch_starts[2]:patch_ends[2],
+  #                                  patch_starts[3]:patch_ends[3]]
+  lesion_mask <- as.array(labeled_candidates)[patch_starts[1]:patch_ends[1],
                                     patch_starts[2]:patch_ends[2],
                                     patch_starts[3]:patch_ends[3]]
-  eroded_mask <- eroded_candidates[patch_starts[1]:patch_ends[1],
+  # eroded candidates needs to be array        
+  eroded_mask <- as.array(eroded_candidates)[patch_starts[1]:patch_ends[1],
                                    patch_starts[2]:patch_ends[2],
                                    patch_starts[3]:patch_ends[3]]
+  #eroded_mask <- eroded_candidates[patch_starts[1]:patch_ends[1],
+  #                                 patch_starts[2]:patch_ends[2],
+  #                                 patch_starts[3]:patch_ends[3]]
   isolation_mask <- 0.1 + 0.9 * ((lesion_mask == 0) + (lesion_mask == candidate_id))
   epiM_isolation_mask <- (lesion_mask == candidate_id) + (eroded_mask == candidate_id)
 
-  patches <- list(t1_patch = t1[patch_starts[1]:patch_ends[1],
+  # 6/13/25 - EAH
+  # t1, flair, phase, and epi need to be arrays
+  #patches <- list(t1_patch = t1[patch_starts[1]:patch_ends[1],
+  #                              patch_starts[2]:patch_ends[2],
+  #                              patch_starts[3]:patch_ends[3]],
+  #                flair_patch = flair[patch_starts[1]:patch_ends[1],
+  #                                    patch_starts[2]:patch_ends[2],
+  #                                    patch_starts[3]:patch_ends[3]],
+  #                phase_patch = phase[patch_starts[1]:patch_ends[1],
+  #                                    patch_starts[2]:patch_ends[2],
+  #                                    patch_starts[3]:patch_ends[3]],
+  #                epi_patch = epi[patch_starts[1]:patch_ends[1],
+  #                                patch_starts[2]:patch_ends[2],
+  #                                patch_starts[3]:patch_ends[3]])
+  patches <- list(t1_patch = as.array(t1)[patch_starts[1]:patch_ends[1],
                                 patch_starts[2]:patch_ends[2],
                                 patch_starts[3]:patch_ends[3]],
-                  flair_patch = flair[patch_starts[1]:patch_ends[1],
+                  flair_patch = as.array(flair)[patch_starts[1]:patch_ends[1],
                                       patch_starts[2]:patch_ends[2],
                                       patch_starts[3]:patch_ends[3]],
-                  phase_patch = phase[patch_starts[1]:patch_ends[1],
+                  phase_patch = as.array(phase)[patch_starts[1]:patch_ends[1],
                                       patch_starts[2]:patch_ends[2],
                                       patch_starts[3]:patch_ends[3]],
-                  epi_patch = epi[patch_starts[1]:patch_ends[1],
+                  epi_patch = as.array(epi)[patch_starts[1]:patch_ends[1],
                                   patch_starts[2]:patch_ends[2],
                                   patch_starts[3]:patch_ends[3]])
   patches <- lapply(1:4, function(patch_index) {

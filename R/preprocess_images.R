@@ -79,7 +79,10 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   phase <- antsCopyImageInfo(epi, phase)
 
   # Brain extraction
-  mask <- fslbet(flair_reg) != 0
+  ## 6/26/25 - EAH
+  ## fslbet isn't working well. trying fslbet_robust
+  #mask <- fslbet(flair_reg) != 0
+  mask <- fslbet_robust(t1_reg) > 0
   t1_reg <- t1_reg * mask
   flair_reg <- flair_reg * mask
   epi <- epi * mask

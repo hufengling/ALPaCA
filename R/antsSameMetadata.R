@@ -19,8 +19,13 @@
 #' \code{\link{antsGetDirection}}, \code{\link{antsGetOrigin}}, \code{\link{antsGetSpacing}}
 #'
 antsSameMetadata <- function(ants1, ants2, tolerance = 0.000001) {
-  same_direction <- all(abs(antsGetDirection(ants1) - antsGetDirection(ants2)) > tolerance)
-  same_origin <- all(antsGetOrigin(ants1) - antsGetOrigin(ants2) > tolerance)
-  same_spacing <- all(antsGetSpacing(ants1) - antsGetSpacing(ants2) > tolerance)
+  # 4/10/25 - EAH
+  # > should be < to ensure images are in same space
+  #same_direction <- all(abs(antsGetDirection(ants1) - antsGetDirection(ants2)) > tolerance)
+  #same_origin <- all(antsGetOrigin(ants1) - antsGetOrigin(ants2) > tolerance)
+  #same_spacing <- all(antsGetSpacing(ants1) - antsGetSpacing(ants2) > tolerance)
+  same_direction <- all(abs(antsGetDirection(ants1) - antsGetDirection(ants2)) < tolerance)
+  same_origin <- all(antsGetOrigin(ants1) - antsGetOrigin(ants2) < tolerance)
+  same_spacing <- all(antsGetSpacing(ants1) - antsGetSpacing(ants2) < tolerance)
   return(same_direction & same_origin & same_spacing)
 }
