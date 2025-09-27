@@ -10,9 +10,9 @@
 <div id='id-section1'/>
 
 ## 1. Installation
-The R package uploaded here does not contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from the following DOI link to **Zenodo**:
+The R package uploaded here does not contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from the following link to **Zenodo**:
 
-10.5281/zenodo.17215591
+https://zenodo.org/records/17215591
 
 Once downloaded, please unzip the "ALPaCA.zip" package. Then, the package can be installed in R using the following command.
 
