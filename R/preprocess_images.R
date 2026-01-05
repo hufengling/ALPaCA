@@ -8,6 +8,7 @@
 #' @param epi_path Path to the EPI MRI image (in .nii.gz format).
 #' @param phase_path Path to the phase MRI image (in .nii.gz format).
 #' @param output_dir Directory where preprocessed images and results will be saved.
+#' @param brainmask_path Path to a brain mask (in .nii.gz format, default is NULL).
 #' @param reorient Logical, indicating whether to reorient the images (default is TRUE).
 #' @param cores Number of CPU cores to use for processing (default is 1).
 #' @param verbose Logical, indicating whether to display verbose output (default is FALSE).
@@ -35,7 +36,7 @@
 #' }
 
 preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
-                              output_dir,
+                              output_dir, brainmask_path = NULL,
                               reorient = T, cores = 1, verbose = FALSE,
                               return_images = T) {
   if (class(c(t1_path, flair_path, epi_path, phase_path)) != "character") {
@@ -82,7 +83,11 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   ## 6/26/25 - EAH
   ## fslbet isn't working well. trying fslbet_robust
   #mask <- fslbet(flair_reg) != 0
-  mask <- fslbet_robust(t1_reg) > 0
+  if (is.null(brainmask_path)) {
+     mask <- fslbet_robust(t1_reg) > 0
+  } else {
+     mask <- check_ants(brainmask_path)
+  }
   t1_reg <- t1_reg * mask
   flair_reg <- flair_reg * mask
   epi <- epi * mask
