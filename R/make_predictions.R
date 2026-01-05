@@ -87,14 +87,6 @@ make_predictions <- function(ants_list = NULL,
     eroded_candidates <- check_ants(ants_list$eroded_candidates)
   }
 
-  #if (!all(antsSameMetadata(t1, flair), # Make sure all images are registered
-  #         antsSameMetadata(t1, epi),
-  #         antsSameMetadata(t1, phase),
-  #         antsSameMetadata(t1, labeled_candidates),
-  #         antsSameMetadata(t1, eroded_candidates))) {
-  #  stop("All images provided must be registered to the same space. Please run preprocess_images()")
-  #}
-
   # Make sure priorities are understood
   lesion_priority <- match.arg(lesion_priority, c("Youden's J", "Specificity", "Sensitivity"))
   prl_priority <- match.arg(prl_priority, c("Youden's J", "Specificity", "Sensitivity"))
@@ -138,7 +130,7 @@ make_predictions <- function(ants_list = NULL,
                    " of ", n_lesions))
     }
     # Get indexes within lesion indexed by candidate_id
-    candidate_coords <- which(labeled_candidates == candidate_id, arr.ind = TRUE)
+    candidate_coords <- which(ants2oro(labeled_candidates) == candidate_id, arr.ind = TRUE)
     under_zero <- apply(candidate_coords - 12, 1, function(i) { # Check if patch bleeds into "nothing"
       any(i < 0)
     })
