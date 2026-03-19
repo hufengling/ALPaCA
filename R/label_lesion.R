@@ -52,6 +52,9 @@ label_lesion <- function(prob_map, bin_map, mincluster = 100) {
 
   current_lesion_count <- max(subimg[[1]])
   sum_mask <- oro2ants(subimg[[1]])
+  if (length(subimg) == 1) {
+    return(sum_mask)
+  }
   for (i in 2:length(subimg)) {
     mask <- subimg[[i]]
     non_zero <- mask[mask > 0]
