@@ -25,14 +25,13 @@
 #'
 #' @export
 split_confluent <- function(i, labeled_image, lesion_center_image) {
-  centers_in_label <- lesion_center_image[labeled_image == i]
+  lesion <- labeled_image == i
+  centers_in_label <- lesion_center_image[lesion]
   n_centers <- unique(centers_in_label[centers_in_label != 0])
 
   if (length(n_centers) == 0) {
-    return(labeled_image == i)
+    return(lesion)
   }
-
-  lesion <- labeled_image == i
   split_lesion <- get_lesion_labels(
     lesion,
     lesion_center_image * lesion
