@@ -106,13 +106,25 @@ make_predictions <- function(ants_list = NULL,
     return(NULL)
   }
 
-  # Load CV models
-  models_list <- lapply(1:n_models, function(i) {
-    return(list(
-      jit_load(file.path(system.file(package = "ALPaCA"),
-                         "extdata", paste0("autoencoder_", i, ".pt"))),
-      jit_load(file.path(system.file(package = "ALPaCA"),
-                         "extdata", paste0("predictor_", i, ".pt"))))
+  # # Load CV models
+  # models_list <- lapply(1:n_models, function(i) {
+  #   return(list(
+  #     jit_load(file.path(system.file(package = "ALPaCA"),
+  #                        "extdata", paste0("autoencoder_", i, ".pt"))),
+  #     jit_load(file.path(system.file(package = "ALPaCA"),
+  #                        "extdata", paste0("predictor_", i, ".pt"))))
+  #   )
+  # })
+
+  # Resolve model file paths once — models are loaded one at a time inside the
+  # loop to avoid holding all 10 encoders + predictors (20 JIT modules) in RAM
+  # simultaneously.
+  model_paths <- lapply(1:n_models, function(i) {
+    list(
+      encoder  = file.path(system.file(package = "ALPaCA"),
+                           "extdata", paste0("autoencoder_", i, ".pt")),
+      predictor = file.path(system.file(package = "ALPaCA"),
+                            "extdata", paste0("predictor_", i, ".pt"))
     )
   })
 
@@ -130,7 +142,7 @@ make_predictions <- function(ants_list = NULL,
                    " of ", n_lesions))
     }
     # Get indexes within lesion indexed by candidate_id
-    candidate_coords <- which(ants2oro(labeled_candidates) == candidate_id, arr.ind = TRUE)
+    candidate_coords <- which(as.arry(labeled_candidates) == candidate_id, arr.ind = TRUE)
     under_zero <- apply(candidate_coords - 12, 1, function(i) { # Check if patch bleeds into "nothing"
       any(i < 0)
     })
@@ -177,8 +189,11 @@ make_predictions <- function(ants_list = NULL,
 
     all_output <- torch_zeros(c(max_coords * n_models, 3))
     for (model_id in 1:n_models) {
-      encoder <- models_list[[model_id]][[1]]$encoder # Extract encoder
-      predictor <- models_list[[model_id]][[2]] # Extract predictor
+      # encoder <- models_list[[model_id]][[1]]$encoder # Extract encoder
+      # predictor <- models_list[[model_id]][[2]] # Extract predictor
+
+      encoder <- jit_load(model_paths[[model_id]]$encoder)$encoder
+      predictor <- jit_load(model_paths[[model_id]]$predictor)
 
       with_no_grad({ # Run patches through model
         output <- predictor(encoder(all_patch))
