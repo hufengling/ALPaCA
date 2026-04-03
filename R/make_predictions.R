@@ -200,6 +200,8 @@ make_predictions <- function(ants_list = NULL,
       })
 
       all_output[((model_id - 1) * max_coords + 1):(model_id * max_coords), ] <- output
+      rm(encoder, predictor, output)
+      gc()
     }
 
     prediction_tensor[candidate_id, ] <- torch_mean(all_output, dim = 1, # Get the mean prediction for all coordinates and models
