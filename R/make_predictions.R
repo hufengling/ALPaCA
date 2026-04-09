@@ -144,7 +144,7 @@ make_predictions <- function(ants_list = NULL,
     # Get indexes within lesion indexed by candidate_id
     candidate_coords <- which(as.arry(labeled_candidates) == candidate_id, arr.ind = TRUE)
     under_zero <- apply(candidate_coords - 13, 1, function(i) { # Check if patch bleeds into "nothing"
-      any(i < 0)
+      any(i < 1)
     })
     over_dim <- apply(candidate_coords + 13, 1, function(i) { # Check if patch bleeds into "nothing" on other side
       any(i[1] > dim(t1)[1],
