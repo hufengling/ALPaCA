@@ -146,7 +146,7 @@ make_predictions <- function(ants_list = NULL,
     under_zero <- apply(candidate_coords - 12, 1, function(i) { # Check if patch bleeds into "nothing"
       any(i < 0)
     })
-    over_dim <- apply(candidate_coords + 11, 1, function(i) { # Check if patch bleeds into "nothing" on other side
+    over_dim <- apply(candidate_coords + 12, 1, function(i) { # Check if patch bleeds into "nothing" on other side
       any(i[1] > dim(t1)[1],
           i[2] > dim(t1)[2],
           i[3] > dim(t1)[3])
