@@ -142,7 +142,7 @@ make_predictions <- function(ants_list = NULL,
                    " of ", n_lesions))
     }
     # Get indexes within lesion indexed by candidate_id
-    candidate_coords <- which(as.arry(labeled_candidates) == candidate_id, arr.ind = TRUE)
+    candidate_coords <- which(as.array(labeled_candidates) == candidate_id, arr.ind = TRUE)
     under_zero <- apply(candidate_coords - 13, 1, function(i) { # Check if patch bleeds into "nothing"
       any(i < 1)
     })
@@ -264,6 +264,14 @@ make_predictions <- function(ants_list = NULL,
   if (clear_discordant_predictions) {
     lesion_sums[lesion_sums %% 2 == 0] <- 0
   }
+  ######################################################################## CORRECTION binary_prediction to suppress sum = 2 or 4
+  # Rebuild binary_predictions from cleaned lesion_sums
+  # so that predictions.csv reflects the same state as alpaca_mask
+  binary_predictions[, 1] <- as.integer(lesion_sums %% 2 == 1)        # Lesion: bit 0
+  binary_predictions[, 2] <- as.integer((lesion_sums %% 4) >= 2)      # PRL:    bit 1
+  binary_predictions[, 3] <- as.integer(lesion_sums >= 4)             # CVS:    bit 2
+
+  ##########################################################################
 
   alpaca_mask <- antsImageClone(labeled_candidates) * 0
   if (return_raw_probabilities) {
