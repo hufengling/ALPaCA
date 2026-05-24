@@ -1,5 +1,5 @@
-# Automated Segmentation of Multiple Sclerosis Lesions, Paramagnetic Rims, and Central Vein Sign on MRI Provides Reliable Diagnostic Biomarkers (NO MODEL PARAMETERS)
-
+# Automated Segmentation of Multiple Sclerosis Lesions, Paramagnetic Rims, and Central Vein Sign on MRI Provides Reliable Diagnostic Biomarkers
+## Install from the most updated Release
 --------
 **Maintainer**: Fengling Hu, fengling.hu@pennmedicine.upenn.edu
 
