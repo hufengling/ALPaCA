@@ -17,29 +17,28 @@
 #' @return Saves the following images to disk: t1_final.nii.gz, flair_final.nii.gz, epi_final.nii.gz, phase_final.nii.gz, prob.nii.gz, labeled_candidates.nii.gz.
 #' If return_images = TRUE, also returns named list containing the images with names: t1, flair, epi, phase, prob_map, labeled_candidates.nii.gz. Named list can be used as input to \code{make_predictions}. If return_images = FALSE, returns NULL.
 #'
-#' @importFrom stats predict
-#' @import neurobase
-#' @import mimosa
-#' @import oro.nifti
-#' @import fslr
 #' @import ANTsR
-#' @import ANTsRCore
-#' @import extrantsr
-#' @import WhiteStripe
+#' @importFrom stats predict
+#' @import mimosa
+#' @importFrom fslr fslsmooth
+#' @importFrom neurobase niftiarr read_rpi
+#' @importFrom extrantsr ants2oro oro2ants fslbet_robust
+#' @importFrom WhiteStripe whitestripe whitestripe_norm
 #'
 #' @export
 #'
 #' @examples \dontrun{
-#' preprocess_images("t1_image.nii.gz", "flair_image.nii.gz",
-#' "epi_image.nii.gz", "phase_image.nii.gz",
-#' "output_directory")
+#' preprocess_images(
+#'   "t1_image.nii.gz", "flair_image.nii.gz",
+#'   "epi_image.nii.gz", "phase_image.nii.gz",
+#'   "output_directory"
+#' )
 #' }
-
 preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
                               output_dir, brainmask_path = NULL,
-                              reorient = T, cores = 1, verbose = FALSE,
-                              return_images = T) {
-  if (class(c(t1_path, flair_path, epi_path, phase_path)) != "character") {
+                              reorient = TRUE, cores = 1, verbose = FALSE,
+                              return_images = TRUE) {
+  if (!inherits(c(t1_path, flair_path, epi_path, phase_path), "character")) {
     stop("Must provide paths to .nii.gz files.")
   }
   if (!all(file.exists(c(t1_path, flair_path, epi_path, phase_path)))) {
@@ -47,7 +46,7 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   }
   if (!file.exists(output_dir)) {
     warning("Output directory does not exist. Making output directory")
-    dir.create(output_dir, showWarnings = F, recursive = T)
+    dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   }
 
   if (reorient) {
@@ -56,10 +55,10 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
     epi <- oro2ants(read_rpi(epi_path, verbose = verbose))
     phase <- oro2ants(read_rpi(phase_path, verbose = verbose))
   } else {
-    t1 <- check_ants(t1_path)
-    flair <- check_ants(flair_path)
-    epi <- check_ants(epi_path)
-    phase <- check_ants(phase_path)
+    t1 <- antsImageRead(t1_path)
+    flair <- antsImageRead(flair_path)
+    epi <- antsImageRead(epi_path)
+    phase <- antsImageRead(phase_path)
   }
 
   # N4 bias correction
@@ -70,23 +69,24 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
 
   # Register T1 and FLAIR to EPI space. Change phase metadata to EPI (since it can be a tiny bit off)
   t1_reg <- antsRegistration(epi, t1, typeofTransform = "Rigid")
-  t1_reg <- antsApplyTransforms(fixed = epi, moving = t1,
-                                transformlist = c(t1_reg$fwdtransforms),
-                                interpolator = "lanczosWindowedSinc")
+  t1_reg <- antsApplyTransforms(
+    fixed = epi, moving = t1,
+    transformlist = c(t1_reg$fwdtransforms),
+    interpolator = "lanczosWindowedSinc"
+  )
   flair_reg <- antsRegistration(epi, flair, typeofTransform = "Rigid")
-  flair_reg <- antsApplyTransforms(fixed = epi, moving = flair,
-                                   transformlist = c(flair_reg$fwdtransforms),
-                                   interpolator = "lanczosWindowedSinc")
+  flair_reg <- antsApplyTransforms(
+    fixed = epi, moving = flair,
+    transformlist = c(flair_reg$fwdtransforms),
+    interpolator = "lanczosWindowedSinc"
+  )
   phase <- antsCopyImageInfo(epi, phase)
 
   # Brain extraction
-  ## 6/26/25 - EAH
-  ## fslbet isn't working well. trying fslbet_robust
-  #mask <- fslbet(flair_reg) != 0
   if (is.null(brainmask_path)) {
-     mask <- fslbet_robust(t1_reg) > 0
+    mask <- fslbet_robust(t1_reg) > 0
   } else {
-     mask <- check_ants(brainmask_path)
+    mask <- antsImageRead(brainmask_path)
   }
   t1_reg <- t1_reg * mask
   flair_reg <- flair_reg * mask
@@ -112,30 +112,43 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
 
   # WhiteStripe T1 and FLAIR for MIMoSA
   t1_reg_oro <- ants2oro(t1_reg)
-  t1_ws <- whitestripe_norm(t1_reg_oro,
-                            whitestripe(t1_reg_oro,
-                                        "T1", stripped = TRUE,
-                                        verbose = verbose)$whitestripe.ind)
+  t1_ws <- whitestripe_norm(
+    t1_reg_oro,
+    whitestripe(t1_reg_oro,
+      "T1",
+      stripped = TRUE,
+      verbose = verbose
+    )$whitestripe.ind
+  )
   flair_reg_oro <- ants2oro(flair_reg)
-  flair_ws <- whitestripe_norm(flair_reg_oro,
-                               whitestripe(flair_reg_oro,
-                                           "T2", stripped = TRUE,
-                                           verbose = verbose)$whitestripe.ind)
+  flair_ws <- whitestripe_norm(
+    flair_reg_oro,
+    whitestripe(flair_reg_oro,
+      "T2",
+      stripped = TRUE,
+      verbose = verbose
+    )$whitestripe.ind
+  )
 
   # Run MIMoSA
-  mimosa <- mimosa_data(brain_mask = mask,
-                        FLAIR = flair_ws, T1 = t1_ws,
-                        gold_standard = NULL, normalize = "no",
-                        cores = cores, verbose = verbose)
+  mimosa_output <- mimosa_data(
+    brain_mask = mask,
+    FLAIR = flair_ws, T1 = t1_ws,
+    gold_standard = NULL, normalize = "no",
+    cores = cores, verbose = verbose
+  )
   predictions_WS <- predict(mimosa_model,
-                            mimosa$mimosa_dataframe,
-                            type = "response")
-  predictions_nifti_WS <- niftiarr(mimosa$top_voxels, 0)
-  predictions_nifti_WS[mimosa$top_voxels == 1] <- predictions_WS
+    mimosa_output$mimosa_dataframe,
+    type = "response"
+  )
+  predictions_nifti_WS <- niftiarr(mimosa_output$top_voxels, 0)
+  predictions_nifti_WS[mimosa_output$top_voxels == 1] <- predictions_WS
   prob <- oro2ants(
-    fslsmooth(predictions_nifti_WS, sigma = 1.25,
-              mask = mimosa$tissue_mask,
-              retimg = TRUE, smooth_mask = TRUE, verbose = verbose)
+    fslsmooth(predictions_nifti_WS,
+      sigma = 1.25,
+      mask = mimosa_output$tissue_mask,
+      retimg = TRUE, smooth_mask = TRUE, verbose = verbose
+    )
   )
   antsImageWrite(prob, file.path(output_dir, "prob.nii.gz"))
 
@@ -148,15 +161,22 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
     prob_05_labeled <- oro2ants(label_lesion(prob, prob_05, mincluster = 30))
     prob_05_erode <- iMath(prob_05_labeled, "GE", 1)
   }
-  antsImageWrite(prob_05_labeled, file.path(output_dir, "labeled_candidates.nii.gz"))
-  antsImageWrite(prob_05_erode, file.path(output_dir, "eroded_candidates.nii.gz"))
+  antsImageWrite(prob_05_labeled, 
+                 file.path(output_dir, "labeled_candidates.nii.gz"))
+  antsImageWrite(prob_05_erode, 
+                 file.path(output_dir, "eroded_candidates.nii.gz"))
 
-  return(list(t1 = t1_final,
-              flair = flair_final,
-              epi = epi_final,
-              phase = phase_final,
-              prob_map = prob,
-              labeled_candidates = prob_05_labeled,
-              eroded_candidates = prob_05_erode)
-  )
+  if (return_images) {
+    list(
+      t1 = t1_final,
+      flair = flair_final,
+      epi = epi_final,
+      phase = phase_final,
+      prob_map = prob,
+      labeled_candidates = prob_05_labeled,
+      eroded_candidates = prob_05_erode
+    )
+  } else {
+    NULL
+  }
 }

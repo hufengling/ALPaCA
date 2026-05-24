@@ -1,8 +1,8 @@
 #' @title 3D Volume Gradient
 #' @description This function returns the gradient images for a 3D array or NIfTI volume.
-#' @param image a 3D array or image of class \code{\link{nifti}}
-#' @param mask an array or \code{\link{nifti}} mask of voxels for which the gradient will be calculated,
-#' if \code{NULL} the gradient will be run for the full array.
+#' @param image a 3D array or image of class nifti
+#' @param mask an array or nifti mask of voxels for which the gradient will be calculated,
+#' if NULL the gradient will be run for the full array.
 #' Note that mask should be in the same space as the image volume
 #' @param which a string specifying the gradient direction that should be returned; either "all" for a list of x, y, and z gradient volumes, or "x", "y", or "z" for a single volume with the given gradient
 #' @param radius an integer specifying radius of the neighborhood (in voxels) for which the gradient should be calculated

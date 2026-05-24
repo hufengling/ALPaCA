@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_predictions.R
 \name{make_predictions}
 \alias{make_predictions}
-\title{#' Make Predictions using ALPaCA}
+\title{#' #' Make Predictions using ALPaCA}
 \usage{
 make_predictions(
   ants_list = NULL,
@@ -12,13 +12,14 @@ make_predictions(
   phase = NULL,
   labeled_candidates = NULL,
   eroded_candidates = NULL,
+  output_dir = NULL,
   lesion_priority = c("Youden's J", "Specificity", "Sensitivity"),
   prl_priority = c("Youden's J", "Specificity", "Sensitivity"),
   cvs_priority = c("Youden's J", "Specificity", "Sensitivity"),
   return_raw_probabilities = FALSE,
   clear_discordant_predictions = TRUE,
-  n_patches = 20,
-  n_models = 10,
+  n_patches = 25,
+  model_ids = 1:10,
   rotate_patches = TRUE,
   verbose = FALSE
 )
@@ -38,6 +39,8 @@ make_predictions(
 
 \item{eroded_candidates}{antsImage or file path to .nii.gz representing eroded candidates for lesion regions.}
 
+\item{output_dir}{Directory where results will be saved.}
+
 \item{lesion_priority}{A character vector specifying priority for lesion prediction thresholds -- Youden's J, Specificity, Sensitivity. Thresholds are based on training set ROC curves from CV models. Default priority is Youden's J, with sensitivity \eqn{\approx} 0.83 and specificity \eqn{\approx} 0.86. 'Specificity' prioritizes specificity 3 times more than sensitivity, with sensitivity \eqn{\approx} 0.69 and specificity \eqn{\approx} 0.94. 'Sensitivity' prioritizes sensitivity 3 times more than specificity, with sensitivity \eqn{\approx} 0.92 and specificity \eqn{\approx} 0.70.}
 
 \item{prl_priority}{A character vector specifying priority for PRL prediction thresholds. Same options and default as lesion_priority. For Youden's J, sensitivity \eqn{\approx} 0.76 and specificity \eqn{\approx} 0.83. For Specificity, sensitivity \eqn{\approx} 0.63 and specificity \eqn{\approx} 0.90. For Sensitivity, sensitivity \eqn{\approx} 0.86 and specificity \eqn{\approx} 0.64.}
@@ -50,7 +53,7 @@ make_predictions(
 
 \item{n_patches}{An integer specifying the number of patches to sample for predictions. Coordinates are sampled from within each lesion and a patch is built around that center coordinate. (Default is 20)}
 
-\item{n_models}{An integer specifying the number of cross-validation models to use for predictions (between 1 and 10). Default is to use all CV models to predict and average the final prediction across all 10 models.}
+\item{model_ids}{Vector of CV models to use with default to use all CV models to predict and average the final prediction across all 10 models (Default 1:10 is all 10 models)}
 
 \item{rotate_patches}{A logical flag indicating whether to rotate the patches used for predictions. Useful for decreasing dependence of predictions for each sample. (Default is TRUE)}
 
@@ -65,18 +68,22 @@ This function runs the pre-trained Automated Lesion, PRL (Paramagnetic Rim Lesio
 \examples{
 \dontrun{
 # Make predictions using input images and default parameters.
-predictions <- make_predictions(t1 = t1_image,
-                                 flair = flair_image,
-                                 epi = epi_image,
-                                 phase = phase_image,
-                                 labeled_candidates = labeled_candidates_image)
+predictions <- make_predictions(
+  t1 = t1_image,
+  flair = flair_image,
+  epi = epi_image,
+  phase = phase_image,
+  labeled_candidates = labeled_candidates_image
+)
 
 # Make predictions using input images and return raw probabilities.
-predictions <- make_predictions(t1 = t1_image,
-                                 flair = flair_image,
-                                 epi = epi_image,
-                                 phase = phase_image,
-                                 labeled_candidates = labeled_candidates_image,
-                                 return_raw_probabilities = TRUE)
+predictions <- make_predictions(
+  t1 = t1_image,
+  flair = flair_image,
+  epi = epi_image,
+  phase = phase_image,
+  labeled_candidates = labeled_candidates_image,
+  return_raw_probabilities = TRUE
+)
 }
 }

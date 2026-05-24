@@ -1,7 +1,7 @@
 #' @title 3D Volume Hessian
 #' @description This function returns the eigenvalues of the hessian matrices for a 3D array or NIfTI volume.
-#' @param image a 3D array or image of class \code{\link{nifti}}
-#' @param mask an array or \code{\link{nifti}} mask of voxels for which vesselness will be calculated,
+#' @param image a 3D array or image of class nifti
+#' @param mask an array or nifti mask of voxels for which vesselness will be calculated,
 #' with more selective masking improving speed significantly.
 #' Note that mask should be in the same space as the image volume
 #' @param radius an integer specifying radius of the neighborhood (in voxels) for which the hessian should be calculated
@@ -29,7 +29,7 @@ hessian3D <- function(image, mask, radius = 1) {
   mask_voxels <- sum(mask)
   # pre-allocating memory for bigmat
   bigmat <- matrix(rep(0, 9 * mask_voxels),
-                   nrow = mask_voxels, ncol = 9
+    nrow = mask_voxels, ncol = 9
   )
   bigmat[, 1] <- gxx
   bigmat[, 2] <- gxy
@@ -43,7 +43,7 @@ hessian3D <- function(image, mask, radius = 1) {
   rm(grads, gradsx, gxx, gxy, gxz, gyy, gyz, gzz)
 
   # performs split() + lapply() in one step
-  biglist <- apply(bigmat, 1, matrix, nrow = 3, simplify = F)
+  biglist <- apply(bigmat, 1, matrix, nrow = 3, simplify = FALSE)
   rm(bigmat)
 
   getevals <- function(matrix) {
@@ -53,7 +53,7 @@ hessian3D <- function(image, mask, radius = 1) {
 
   print("Calculating eigenvalues")
   result <- matrix(unlist(lapply(biglist, getevals)),
-                   nrow = 3
+    nrow = 3
   )
   e1 <- mask
   e1[mask == 1] <- result[1, ]
@@ -61,5 +61,5 @@ hessian3D <- function(image, mask, radius = 1) {
   e2[mask == 1] <- result[2, ]
   e3 <- mask
   e3[mask == 1] <- result[3, ]
-  return(list(eigval1 = e1, eigval2 = e2, eigval3 = e3))
+  list(eigval1 = e1, eigval2 = e2, eigval3 = e3)
 }

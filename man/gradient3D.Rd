@@ -7,10 +7,10 @@
 gradient3D(image, mask = NULL, which = "all", radius = 1)
 }
 \arguments{
-\item{image}{a 3D array or image of class \code{\link{nifti}}}
+\item{image}{a 3D array or image of class nifti}
 
-\item{mask}{an array or \code{\link{nifti}} mask of voxels for which the gradient will be calculated,
-if \code{NULL} the gradient will be run for the full array.
+\item{mask}{an array or nifti mask of voxels for which the gradient will be calculated,
+if NULL the gradient will be run for the full array.
 Note that mask should be in the same space as the image volume}
 
 \item{which}{a string specifying the gradient direction that should be returned; either "all" for a list of x, y, and z gradient volumes, or "x", "y", or "z" for a single volume with the given gradient}

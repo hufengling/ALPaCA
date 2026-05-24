@@ -12,7 +12,7 @@
 #' labeled_image <- label_lesion(prob_map, mimosa_mask, mincluster = 100)
 #' }
 #'
-#' @importFrom ANTsRCore labelClusters
+#' @importFrom ANTsR labelClusters
 #' @importFrom extrantsr ants2oro oro2ants
 #'
 #' @seealso
@@ -26,8 +26,8 @@
 #'
 label_lesion <- function(prob_map, bin_map, mincluster = 100) {
   labeled_image <- labelClusters(bin_map,
-                                 minClusterSize = 1,
-                                 fullyConnected = TRUE
+    minClusterSize = 1,
+    fullyConnected = TRUE
   )
   size_control <- table(labeled_image[labeled_image != 0])
   if (length(size_control != 0)) {
@@ -39,15 +39,15 @@ label_lesion <- function(prob_map, bin_map, mincluster = 100) {
     return(zero_mask)
   }
 
-  lesion_count <- 1:length(size_control)
+  lesion_count <- seq_along(size_control)
   lesion_center_image <- lesion_centers(
     prob_map = prob_map, bin_map = bin_map,
     minCenterSize = mincluster / 10, radius = 1
   )$lesioncenters
 
   subimg <- lapply(lesion_count, split_confluent,
-                   labeled_image = ants2oro(labeled_image),
-                   lesion_center_image = ants2oro(lesion_center_image)
+    labeled_image = ants2oro(labeled_image),
+    lesion_center_image = ants2oro(lesion_center_image)
   )
 
   current_lesion_count <- max(subimg[[1]])
@@ -62,5 +62,5 @@ label_lesion <- function(prob_map, bin_map, mincluster = 100) {
     current_lesion_count <- current_lesion_count + max(non_zero)
     sum_mask <- sum_mask + mask
   }
-  return(sum_mask)
+  sum_mask
 }

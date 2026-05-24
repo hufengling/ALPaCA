@@ -1,118 +1,82 @@
-#' Extract Patch
-#'
-#' This function extracts a patch from various MRI images based on specified parameters,
-#' optionally rotates the patches, and returns them as a concatenated tensor.
-#'
-#' @param candidate_id An identifier for the candidate lesion region.
-#' @param patch_starts A vector specifying the starting coordinates of the patch in three dimensions.
-#' @param patch_ends A vector specifying the ending coordinates of the patch in three dimensions.
-#' @param t1 antsImage representing the T1-weighted MRI image.
-#' @param flair antsImage representing the FLAIR MRI image.
-#' @param epi antsImage representing the EPI MRI image.
-#' @param phase antsImage representing the phase MRI image.
-#' @param labeled_candidates antsImage representing labeled candidates for lesion regions.
-#' @param eroded_candidates antsImage representing eroded candidates for lesion regions
-#' @param rotate_patches A logical flag indicating whether to rotate the extracted patches.
-#'
-#' @return A concatenated tensor containing the extracted and optionally rotated patches.
-#'
-#' @import torch
-#'
-#' @examples \dontrun{
-#' # Extract a patch with no rotation.
-#' extracted_patch <- extract_patch(candidate_id = 1,
-#'                                  patch_starts = c(10, 20, 30),
-#'                                  patch_ends = c(20, 30, 40),
-#'                                  t1 = t1_image,
-#'                                  flair = flair_image,
-#'                                  epi = epi_image,
-#'                                  phase = phase_image,
-#'                                  labeled_candidates = labeled_candidates_image,
-#'                                  eroded_candidates = eroded_candidates_image,
-#'                                  rotate_patches = FALSE)
-#'
-#' # Extract a patch and apply random rotation.
-#' extracted_patch <- extract_patch(candidate_id = 2,
-#'                                  patch_starts = c(15, 25, 35),
-#'                                  patch_ends = c(25, 35, 45),
-#'                                  t1 = t1_image,
-#'                                  flair = flair_image,
-#'                                  epi = epi_image,
-#'                                  phase = phase_image,
-#'                                  labeled_candidates = labeled_candidates_image,
-#'                                  eroded_candidates = eroded_candidates_image,
-#'                                  rotate_patches = TRUE)
-#' }
 
-extract_patch <- function(candidate_id, patch_starts, patch_ends,
-                          t1, flair, epi, phase,
-                          labeled_candidates,
-                          eroded_candidates,
-                          rotate_patches) {
-  # 6/13/25 - EAH
-  # labeled candidates needs to be array
-  #lesion_mask <- labeled_candidates[patch_starts[1]:patch_ends[1],
-  #                                  patch_starts[2]:patch_ends[2],
-  #                                  patch_starts[3]:patch_ends[3]]
-  lesion_mask <- as.array(labeled_candidates)[patch_starts[1]:patch_ends[1],
-                                    patch_starts[2]:patch_ends[2],
-                                    patch_starts[3]:patch_ends[3]]
-  # eroded candidates needs to be array        
-  eroded_mask <- as.array(eroded_candidates)[patch_starts[1]:patch_ends[1],
-                                   patch_starts[2]:patch_ends[2],
-                                   patch_starts[3]:patch_ends[3]]
-  #eroded_mask <- eroded_candidates[patch_starts[1]:patch_ends[1],
-  #                                 patch_starts[2]:patch_ends[2],
-  #                                 patch_starts[3]:patch_ends[3]]
-  isolation_mask <- 0.1 + 0.9 * ((lesion_mask == 0) + (lesion_mask == candidate_id))
-  epiM_isolation_mask <- (lesion_mask == candidate_id) + (eroded_mask == candidate_id)
 
-  # 6/13/25 - EAH
-  # t1, flair, phase, and epi need to be arrays
-  #patches <- list(t1_patch = t1[patch_starts[1]:patch_ends[1],
-  #                              patch_starts[2]:patch_ends[2],
-  #                              patch_starts[3]:patch_ends[3]],
-  #                flair_patch = flair[patch_starts[1]:patch_ends[1],
-  #                                    patch_starts[2]:patch_ends[2],
-  #                                    patch_starts[3]:patch_ends[3]],
-  #                phase_patch = phase[patch_starts[1]:patch_ends[1],
-  #                                    patch_starts[2]:patch_ends[2],
-  #                                    patch_starts[3]:patch_ends[3]],
-  #                epi_patch = epi[patch_starts[1]:patch_ends[1],
-  #                                patch_starts[2]:patch_ends[2],
-  #                                patch_starts[3]:patch_ends[3]])
-  patches <- list(t1_patch = as.array(t1)[patch_starts[1]:patch_ends[1],
-                                patch_starts[2]:patch_ends[2],
-                                patch_starts[3]:patch_ends[3]],
-                  flair_patch = as.array(flair)[patch_starts[1]:patch_ends[1],
-                                      patch_starts[2]:patch_ends[2],
-                                      patch_starts[3]:patch_ends[3]],
-                  phase_patch = as.array(phase)[patch_starts[1]:patch_ends[1],
-                                      patch_starts[2]:patch_ends[2],
-                                      patch_starts[3]:patch_ends[3]],
-                  epi_patch = as.array(epi)[patch_starts[1]:patch_ends[1],
-                                  patch_starts[2]:patch_ends[2],
-                                  patch_starts[3]:patch_ends[3]])
-  patches <- lapply(1:4, function(patch_index) {
-    patch <- patches[[patch_index]]
-    if (patch_index == 4) {
-      return(torch_tensor(patch * epiM_isolation_mask))
-    } else {
-      return(torch_tensor(patch * isolation_mask))
-    }
-  })
+#' Extract and optionally augment a 24 × 24 × 24 patch around one coordinate
+#'
+#' @param coord         `[4]` torch tensor: (channel, x, y, z) voxel indices.
+#' @param candidate_id  Integer. Label of the target candidate.
+#' @param t1,flair,phase,epi `[1, X, Y, Z]` torch tensors for each modality.
+#' @param lesion_mask        `[1, X, Y, Z]` labeled candidate mask.
+#' @param lesion_erode       `[1, X, Y, Z]` eroded candidate mask.
+#' @param rotate_patches Logical. Apply random 3-D rotation augmentation?
+#' @return `[4, 24, 24, 24]` torch tensor (masked multi-channel patch).
+#' @noRd
+extract_patch <- function(coord, candidate_id,
+                          t1, flair, phase, epi,
+                          lesion_mask, lesion_erode,
+                          rotate_patches = TRUE) {
+  # Convert to R integer (1-indexed); coord is [channel, x, y, z]
+  cx <- as.integer(coord[2])
+  cy <- as.integer(coord[3])
+  cz <- as.integer(coord[4])
 
-  if (rotate_patches) {
-    invert <- sample(0:1, 1) # Mirror patch
-    face <- sample(1:6, 1) # Which face of the tensor is "down"
-    rotations <- sample(0:3, 1) # Rotate tensor radially once correct face is "down"
+  start_ends <- c(
+    cx - 12L, cx + 11L,
+    cy - 12L, cy + 11L,
+    cz - 12L, cz + 11L
+  )
 
-    patches <- lapply(patches, function(patch_tensor) {
-      rotate_patch(patch_tensor, invert, face, rotations)
-    })
+  x_start <- max(start_ends[1], 1L)
+  x_end <- min(start_ends[2], t1$size(2L))
+  y_start <- max(start_ends[3], 1L)
+  y_end <- min(start_ends[4], t1$size(3L))
+  z_start <- max(start_ends[5], 1L)
+  z_end <- min(start_ends[6], t1$size(4L))
+
+  t1_p <- t1[, x_start:x_end, y_start:y_end, z_start:z_end]
+  flair_p <- flair[, x_start:x_end, y_start:y_end, z_start:z_end]
+  phase_p <- phase[, x_start:x_end, y_start:y_end, z_start:z_end]
+  epi_p <- epi[, x_start:x_end, y_start:y_end, z_start:z_end]
+
+  patch <- torch::torch_cat(list(t1_p, flair_p, phase_p, epi_p), dim = 1L)
+  lesion_mask_p <- lesion_mask[, x_start:x_end, y_start:y_end, z_start:z_end]
+  lesion_erode_p <- lesion_erode[, x_start:x_end, y_start:y_end, z_start:z_end]
+
+  # Pad if the patch clips the volume boundary
+  if (!identical(as.integer(patch$size()), c(4L, 24L, 24L, 24L))) {
+    padded <- pad_patches(
+      patch, lesion_mask_p, lesion_erode_p,
+      start_ends, t1
+    )
+    patch <- padded$patch
+    lesion_mask_p <- padded$lesion_mask_patch
+    lesion_erode_p <- padded$lesion_erode_patch
   }
 
-  patches <- lapply(patches, torch_unsqueeze, dim = 1)
+  masks <- isolate_lesion(lesion_mask_p, lesion_erode_p, candidate_id)
+  isolation_mask <- masks$isolation_mask
+  epi_mask <- masks$epi_tensor
 
-  return(torch_cat(patches, dim = 1))
+
+  if (rotate_patches) {
+    invert <- sample.int(2L, 1L) - 1L # 0 or 1
+    face <- sample.int(6L, 1L) # 1 – 6
+    rotations <- sample.int(4L, 1L) - 1L # 0 – 3
+
+    patch <- torch::torch_cat(list(
+      rotate_patch(patch[1, , , ], invert, face, rotations)$unsqueeze(1L),
+      rotate_patch(patch[2, , , ], invert, face, rotations)$unsqueeze(1L),
+      rotate_patch(patch[3, , , ], invert, face, rotations)$unsqueeze(1L),
+      rotate_patch(patch[4, , , ], invert, face, rotations)$unsqueeze(1L)
+    ), dim = 1L)
+
+    isolation_mask <- rotate_patch(isolation_mask[1, , , ], invert, face, rotations)$unsqueeze(1L)
+    epi_mask <- rotate_patch(epi_mask[1, , , ], invert, face, rotations)$unsqueeze(1L)
+  }
+
+  combined_mask <- torch::torch_cat(
+    list(isolation_mask$`repeat`(c(3L, 1L, 1L, 1L)), epi_mask),
+    dim = 1L
+  )
+
+  patch * combined_mask
 }

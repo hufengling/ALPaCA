@@ -10,10 +10,11 @@ preprocess_images(
   epi_path,
   phase_path,
   output_dir,
-  reorient = T,
+  brainmask_path = NULL,
+  reorient = TRUE,
   cores = 1,
   verbose = FALSE,
-  return_images = T
+  return_images = TRUE
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ preprocess_images(
 \item{phase_path}{Path to the phase MRI image (in .nii.gz format).}
 
 \item{output_dir}{Directory where preprocessed images and results will be saved.}
+
+\item{brainmask_path}{Path to a brain mask (in .nii.gz format, default is NULL).}
 
 \item{reorient}{Logical, indicating whether to reorient the images (default is TRUE).}
 
@@ -45,8 +48,10 @@ Additionally, a lesion probability map is calculated using MIMoSA (Valcarcel et 
 }
 \examples{
 \dontrun{
-preprocess_images("t1_image.nii.gz", "flair_image.nii.gz",
-"epi_image.nii.gz", "phase_image.nii.gz",
-"output_directory")
+preprocess_images(
+  "t1_image.nii.gz", "flair_image.nii.gz",
+  "epi_image.nii.gz", "phase_image.nii.gz",
+  "output_directory"
+)
 }
 }

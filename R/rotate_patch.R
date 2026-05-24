@@ -1,55 +1,55 @@
-#' Rotate Patch
+#' Apply a random rigid rotation / reflection to a 3-D patch
 #'
-#' This function rotates a patch based on specified parameters.
+#' Rotations are parameterised by three independent draws:
+#' * `invert`    — 0 or 1; whether to reflect the patch.
+#' * `face`      — 1 – 6; which face of the cube faces "down".
+#' * `rotations` — 0 – 3; additional 90-degree rotations around the vertical.
 #'
-#' @param patch A tensor representing the patch to be rotated.
-#' @param invert An integer flag indicating whether to invert the patch (1 for inversion, 0 for no inversion).
-#' @param face An integer specifying the face of the cube to rotate towards (values from 1 to 6).
-#' @param rotations An integer indicating the number of rotations (values from 0 to 3) to apply to the patch.
+#' Dimension conventions (1-indexed, as required by `torch`):
+#'   dim 1 = X, dim 2 = Y, dim 3 = Z  (for the 3-D input tensor).
 #'
-#' @return A tensor representing the rotated patch.
-#'
-#' @import torch
-#'
-#' @examples \dontrun{
-#' # Rotate the patch with no inversion, with the second face facedown, and performing one rotation.
-#' rotated_patch <- rotate_patch(patch, invert = 0, face = 2, rotations = 1)
-#'
-#' # Rotate the patch with inversion, with the third face facedown, and performing three rotations.
-#' rotated_patch <- rotate_patch(patch, invert = 1, face = 3, rotations = 3)
-#' }
-
+#' @param patch     `[X, Y, Z]` torch tensor (single-channel 3-D cube).
+#' @param invert    Integer scalar (0 or 1).
+#' @param face      Integer scalar (1 – 6).
+#' @param rotations Integer scalar (0 – 3).
+#' @return Rotated `[X, Y, Z]` torch tensor.
+#' @noRd
 rotate_patch <- function(patch, invert, face, rotations) {
-  if (invert == 1)
-    patch <- torch_flip(patch, 1) # Reflect
-
-  if (face == 2)
-    patch <- torch_transpose(torch_flip(patch, 1), 1, 2) # Flip cube towards
-
-  if (face == 3) {
-    patch <- torch_transpose(torch_flip(patch, 1), 1, 2) # Flip cube towards twice
-    patch <- torch_transpose(torch_flip(patch, 1), 1, 2)
+  # Optional reflection along the Y axis
+  if (invert == 1L) {
+    patch <- torch::torch_flip(patch, dims = 2L)
   }
 
-  if (face == 4)
-    patch <- torch_transpose(torch_flip(patch, 2), 2, 1) # Flip cube away
-
-  if (face == 5)
-    patch <- torch_transpose(torch_flip(patch, 3), 1, 3) # Flip cube to left
-
-  if (face == 6)
-    patch <- torch_transpose(torch_flip(patch, 1), 3, 1) # Flip cube to right
-
-  if (rotations == 1)
-    patch <- torch_transpose(torch_flip(patch, 2), 2, 3)
-
-  if (rotations == 2) {
-    patch <- torch_transpose(torch_flip(patch, 2), 2, 3)
-    patch <- torch_transpose(torch_flip(patch, 2), 2, 3)
+  # Reorient the cube so a different face points "down"
+  if (face == 2L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 2L), 2L, 3L)
+  }
+  if (face == 3L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 2L), 2L, 3L)
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 2L), 2L, 3L)
+  }
+  if (face == 4L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 3L), 3L, 2L)
+  }
+  if (face == 5L) {
+    # "Flip cube to left": swap X and Z
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 3L), 1L, 3L)
+  }
+  if (face == 6L) {
+    # "Flip cube to right": swap X and Z in the opposite direction
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 1L), 3L, 1L)
   }
 
-  if (rotations == 3)
-    patch <- torch_transpose(torch_flip(patch, 3), 3, 2)
-
-  return(patch)
+  # In-plane rotation (multiples of 90 degrees in the Y-Z plane)
+  if (rotations == 1L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 3L), 3L, 2L) # was flip(2),transp(2,3)
+  }
+  if (rotations == 2L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 3L), 3L, 2L)
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 3L), 3L, 2L)
+  }
+  if (rotations == 3L) {
+    patch <- torch::torch_transpose(torch::torch_flip(patch, dims = 2L), 2L, 3L)
+  }
+  patch
 }

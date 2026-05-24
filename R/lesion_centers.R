@@ -5,8 +5,9 @@
 #' @param minCenterSize an integer value representing the minimum number of connected voxels that can be considered a lesion center
 #' @param radius an integer specifying radius of the neighborhood (in voxels) for which the hessian should be calculated.
 #'
-#' @importFrom ANTsRCore labelClusters
-#' @importFrom extrantsr ants2oro oro2ants
+#' @importFrom ANTsR labelClusters
+#' @importFrom extrantsr ants2oro
+#'
 #' @return A list containing lesioncenters (antsImage object with labeled lesion centers) and lesioncount (an integer value representing the number of distinct lesions)
 #' @examples \dontrun{
 #' library(neurobase)
@@ -35,5 +36,5 @@ lesion_centers <- function(prob_map, bin_map,
   les[phes1 > 0 | phes2 > 0 | phes3 > 0] <- 0
   les <- labelClusters(les, minClusterSize = minCenterSize * scale)
 
-  return(list(lesioncenters = les, lesioncount = max(les)))
+  list(lesioncenters = les, lesioncount = max(les))
 }
