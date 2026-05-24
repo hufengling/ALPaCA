@@ -44,7 +44,7 @@ get_coords <- function(candidate_id, num_coords, lesion_mask) {
 #'   `[1, 24, 24, 24]` torch tensors.
 #' @noRd
 isolate_lesion <- function(lesion_mask_patch,
-                           lesion_erode_patch, 
+                           lesion_erode_patch,
                            candidate_id) {
   tmp_lesion_mask <- lesion_mask_patch$clone()
   tmp_erode <- lesion_erode_patch$clone()
@@ -343,7 +343,7 @@ make_predictions <- function(ants_list = NULL,
   output_df <- as.data.frame(as.matrix(combined$detach()))
 
   names(output_df) <- c("lesion_prob", "PRL_prob", "CVS_prob",
-                        "lesion_prob_variance", "PRL_prob_variance", 
+                        "lesion_prob_variance", "PRL_prob_variance",
                         "CVS_prob_variance")
 
   if (verbose)
@@ -394,9 +394,12 @@ make_predictions <- function(ants_list = NULL,
   binary_predictions[, 3] <- binary_predictions[, 3] * 4 # for easier if statements in following section
 
   lesion_sums <- rowSums(binary_predictions) # 0 is (0, 0, 0), 1 is (1, 0, 0), 3 is (1, 1, 0), 5 is (1, 0, 1), 7 is (1, 1, 1)
-  # If sum is 2 or 4, that means prediction is (0, 1, 0) or (0, 0, 1). Since lesion prediction is more reliable than PRL or CVS, convert these to (0, 0, 0)
+  # If sum is 2, 4, or 6, that means prediction is (0, 1, 0), (0, 0, 1), or (0, 1, 1). Since lesion prediction is more reliable than PRL or CVS, convert these to (0, 0, 0)
   if (clear_discordant_predictions) {
     lesion_sums[lesion_sums %% 2 == 0] <- 0
+    binary_predictions[lesion_sums == 0, 1] <- 0
+    binary_predictions[lesion_sums == 0, 2] <- 0
+    binary_predictions[lesion_sums == 0, 3] <- 0
   }
 
   alpaca_mask <- antsImageClone(labeled_candidates_ants) * 0
