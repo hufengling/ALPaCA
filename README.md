@@ -1,5 +1,5 @@
 # Automated Segmentation of Multiple Sclerosis Lesions, Paramagnetic Rims, and Central Vein Sign on MRI Provides Reliable Diagnostic Biomarkers
-
+## Install from the most updated Release
 --------
 **Maintainer**: Fengling Hu, fengling.hu@pennmedicine.upenn.edu
 
@@ -10,7 +10,7 @@
 <div id='id-section1'/>
 
 ## 1. Installation
-The R package uploaded here does not contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from the following link to **Zenodo**:
+The R package uploaded here does NOT contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed from GitHub Release or via the following link to **Zenodo**:
 
 https://zenodo.org/records/17215591
 
