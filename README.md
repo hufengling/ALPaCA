@@ -27,6 +27,7 @@ Then, you can load this package via:
 library(ALPaCA)
 ```
 
+Alternatively, the GitHub repo (which does not contain the models) can be pulled and the models can be downloaded via the GitHub Release 1.1.X. These models should be unzipped and copied into the ALPaCA/inst/extdata directory. The final extdata directory should contain 20 *.pt files (autoencoder_[1-10].pt and predictor_[1-10].pt)
 ## 2. Background
 
 This GitHub provides the package for "Automatic Segmentation and Classification of Multiple Sclerosis Lesions and Subtypes on Multi-Modal Magnetic Resonance Imaging Using a Convolutional Neural Network." Multiple sclerosis (MS) is a demyelinating, inflammatory disorder characterized by central nervous system lesions detectable via magnetic resonance imaging (MRI). Presence of classical MS lesions and two MS lesion subtypes – paramagnetic rim lesions (PRLs) and central vein sign lesions (CVSs) – are important for MS diagnosis and prognosis. However, manual segmentation of MS lesions, PRLs and CVS lesions is time-consuming and rater-dependent. We propose a fully automated method for segmenting MS lesions and subtypes, called Automated Lesion, PRL, and CVS Analysis network (ALPaCA).
