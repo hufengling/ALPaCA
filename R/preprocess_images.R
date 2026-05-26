@@ -8,18 +8,20 @@
 #' @param epi_path Path to the EPI MRI image (in .nii.gz format).
 #' @param phase_path Path to the phase MRI image (in .nii.gz format).
 #' @param output_dir Directory where preprocessed images and results will be saved.
-#' @param brainmask_path Path to a brain mask (in .nii.gz format, default is NULL).
+#' @param brain_mask_path Path to a brain mask (in .nii.gz format, default is NULL).
+#' @param custom_lesion_map Path to custom lesion probability_map to use instead of MIMoSA output (in .nii.gz format, default is NULL). Lesion probability map must be between 0 and 1. If a custom lesion map is supplied, MIMoSA will be skipped and subsequent lesion mask processing will be performed on the custom map. A desired threshold must be provided to use with the custom lesion map. ALPaCA classification is not guaranteed to generalize to custom lesion maps.
+#' @param custom_map_threshold Value between 0 to 1 at which to threshold custom_lesion_map. For best chances that ALPaCA will generalize well, a relatively lower threshold (high sensitivity, low specificity) should be chosen. (Default is NULL).
 #' @param reorient Logical, indicating whether to reorient the images (default is TRUE).
 #' @param cores Number of CPU cores to use for processing (default is 1).
 #' @param verbose Logical, indicating whether to display verbose output (default is FALSE).
 #' @param return_images Logical, indicating whether a named list of output images should be returned in addition to writing to disk (default is TRUE)
 #'
-#' @return Saves the following images to disk: t1_final.nii.gz, flair_final.nii.gz, epi_final.nii.gz, phase_final.nii.gz, prob.nii.gz, labeled_candidates.nii.gz.
-#' If return_images = TRUE, also returns named list containing the images with names: t1, flair, epi, phase, prob_map, labeled_candidates.nii.gz. Named list can be used as input to \code{make_predictions}. If return_images = FALSE, returns NULL.
+#' @return Saves the following images to disk: t1_final.nii.gz, flair_final.nii.gz, epi_final.nii.gz, phase_final.nii.gz, prob.nii.gz, labeled_candidates.nii.gz, eroded_candidates.nii.gz.
+#' If return_images = TRUE, also returns named list containing the images with names: t1, flair, epi, phase, prob_map, labeled_candidates.nii.gz, and eroded_candidates.nii.gz. Named list can be used as input to \code{make_predictions}. If return_images = FALSE, returns NULL.
 #'
 #' @import ANTsR
 #' @importFrom stats predict
-#' @import mimosa
+#' @importFrom mimosa mimosa_data
 #' @importFrom fslr fslsmooth
 #' @importFrom neurobase niftiarr read_rpi
 #' @importFrom extrantsr ants2oro oro2ants fslbet_robust
@@ -35,7 +37,8 @@
 #' )
 #' }
 preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
-                              output_dir, brainmask_path = NULL,
+                              output_dir, brain_mask_path = NULL,
+                              custom_lesion_map = NULL, custom_map_threshold = NULL,
                               reorient = TRUE, cores = 1, verbose = FALSE,
                               return_images = TRUE) {
   if (!inherits(c(t1_path, flair_path, epi_path, phase_path), "character")) {
@@ -48,7 +51,24 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
     warning("Output directory does not exist. Making output directory")
     dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   }
+  if (!is.null(custom_lesion_map) & is.null(custom_map_threshold)) {
+    stop("If custom_lesion_map is provided, custom_map_threshold cannot be NULL. Please provide a desired threshold.")
+  }
+  if (!inherits(custom_lesion_map, "character")) {
+    stop("Must provide paths to .nii.gz files.")
+  }
+  if (!file.exists(custom_lesion_map)) {
+    stop("Files are missing or paths or wrong")
+  }
+  if (custom_map_threshold <= 0 || custom_map_threshold >= 1) {
+    stop("custom_map_threshold must be between 0 and 1")
+  }
+  if (!file.exists(output_dir)) {
+    warning("Output directory does not exist. Making output directory")
+    dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+  }
 
+  # Read files
   if (reorient) {
     t1 <- oro2ants(read_rpi(t1_path, verbose = verbose))
     flair <- oro2ants(read_rpi(flair_path, verbose = verbose))
@@ -83,10 +103,10 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   phase <- antsCopyImageInfo(epi, phase)
 
   # Brain extraction
-  if (is.null(brainmask_path)) {
+  if (is.null(brain_mask_path)) {
     mask <- fslbet_robust(t1_reg) > 0
   } else {
-    mask <- antsImageRead(brainmask_path)
+    mask <- antsImageRead(brain_mask_path)
   }
   t1_reg <- t1_reg * mask
   flair_reg <- flair_reg * mask
@@ -110,61 +130,71 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
   phase_final <- ((phase - phase_dist[1]) / phase_dist[2]) * mask
   antsImageWrite(phase_final, file.path(output_dir, "phase_final.nii.gz"))
 
-  # WhiteStripe T1 and FLAIR for MIMoSA
-  t1_reg_oro <- ants2oro(t1_reg)
-  t1_ws <- whitestripe_norm(
-    t1_reg_oro,
-    whitestripe(t1_reg_oro,
-      "T1",
-      stripped = TRUE,
-      verbose = verbose
-    )$whitestripe.ind
-  )
-  flair_reg_oro <- ants2oro(flair_reg)
-  flair_ws <- whitestripe_norm(
-    flair_reg_oro,
-    whitestripe(flair_reg_oro,
-      "T2",
-      stripped = TRUE,
-      verbose = verbose
-    )$whitestripe.ind
-  )
-
-  # Run MIMoSA
-  mimosa_output <- mimosa_data(
-    brain_mask = mask,
-    FLAIR = flair_ws, T1 = t1_ws,
-    gold_standard = NULL, normalize = "no",
-    cores = cores, verbose = verbose
-  )
-  predictions_WS <- predict(mimosa_model,
-    mimosa_output$mimosa_dataframe,
-    type = "response"
-  )
-  predictions_nifti_WS <- niftiarr(mimosa_output$top_voxels, 0)
-  predictions_nifti_WS[mimosa_output$top_voxels == 1] <- predictions_WS
-  prob <- oro2ants(
-    fslsmooth(predictions_nifti_WS,
-      sigma = 1.25,
-      mask = mimosa_output$tissue_mask,
-      retimg = TRUE, smooth_mask = TRUE, verbose = verbose
+  # Create/split lesion maps
+  if (is.null(custom_lesion_map)) {
+    # WhiteStripe T1 and FLAIR for MIMoSA
+    t1_reg_oro <- ants2oro(t1_reg)
+    t1_ws <- whitestripe_norm(
+      t1_reg_oro,
+      whitestripe(t1_reg_oro,
+                  "T1",
+                  stripped = TRUE,
+                  verbose = verbose
+      )$whitestripe.ind
     )
-  )
-  antsImageWrite(prob, file.path(output_dir, "prob.nii.gz"))
+    flair_reg_oro <- ants2oro(flair_reg)
+    flair_ws <- whitestripe_norm(
+      flair_reg_oro,
+      whitestripe(flair_reg_oro,
+                  "T2",
+                  stripped = TRUE,
+                  verbose = verbose
+      )$whitestripe.ind
+    )
 
-  # Threshold MIMoSA mask and identify/split confluent lesions
-  prob_05 <- antsImageClone(prob > 0.05)
-  if (sum(prob_05) == 0) {
-    prob_05_labeled <- antsImageClone(prob_05)
-    prob_05_erode <- antsImageClone(prob_05)
+    # Run MIMoSA
+    mimosa_output <- mimosa_data(
+      brain_mask = mask,
+      FLAIR = flair_ws, T1 = t1_ws,
+      gold_standard = NULL, normalize = "no",
+      cores = cores, verbose = verbose
+    )
+    predictions_WS <- predict(mimosa_model,
+                              mimosa_output$mimosa_dataframe,
+                              type = "response"
+    )
+    predictions_nifti_WS <- niftiarr(mimosa_output$top_voxels, 0)
+    predictions_nifti_WS[mimosa_output$top_voxels == 1] <- predictions_WS
+    prob_map <- oro2ants(
+      fslsmooth(predictions_nifti_WS,
+                sigma = 1.25,
+                mask = mimosa_output$tissue_mask,
+                retimg = TRUE, smooth_mask = TRUE, verbose = verbose
+      )
+    )
+    antsImageWrite(prob_map, file.path(output_dir, "prob.nii.gz"))
+
+    # Threshold MIMoSA mask and identify/split confluent lesions
+    prob_thresh <- antsImageClone(prob_map > 0.05)
+    if (sum(prob_thresh) == 0) {
+      prob_labeled <- antsImageClone(prob_thresh)
+      prob_eroded <- antsImageClone(prob_thresh)
+    } else {
+      prob_labeled <- oro2ants(label_lesion(prob_map, prob_thresh, mincluster = 30))
+      prob_eroded <- iMath(prob_labeled, "GE", 1)
+    }
+    antsImageWrite(prob_labeled,
+                   file.path(output_dir, "labeled_candidates.nii.gz"))
+    antsImageWrite(prob_eroded,
+                   file.path(output_dir, "eroded_candidates.nii.gz"))
   } else {
-    prob_05_labeled <- oro2ants(label_lesion(prob, prob_05, mincluster = 30))
-    prob_05_erode <- iMath(prob_05_labeled, "GE", 1)
+    custom_split_output <- split_custom_lesion_mask(custom_lesion_map,
+                                                    custom_map_threshold,
+                                                    output_dir,
+                                                    verbose = verbose)
+    prob_labeled <- custom_split_output$labeled_candidates
+    prob_eroded <- custom_split_output$eroded_candidates
   }
-  antsImageWrite(prob_05_labeled, 
-                 file.path(output_dir, "labeled_candidates.nii.gz"))
-  antsImageWrite(prob_05_erode, 
-                 file.path(output_dir, "eroded_candidates.nii.gz"))
 
   if (return_images) {
     list(
@@ -172,9 +202,9 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
       flair = flair_final,
       epi = epi_final,
       phase = phase_final,
-      prob_map = prob,
-      labeled_candidates = prob_05_labeled,
-      eroded_candidates = prob_05_erode
+      prob_map = prob_map,
+      labeled_candidates = prob_labeled,
+      eroded_candidates = prob_eroded
     )
   } else {
     NULL

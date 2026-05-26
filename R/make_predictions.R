@@ -6,7 +6,7 @@
 #' @return A `[1, X, Y, Z]` float32 torch tensor.
 #' @noRd
 load_nifti_tensor <- function(path) {
-  arr <- antsImageRead(path)
+  arr <- check_ants(path)
   torch_tensor(as.array(arr), dtype = torch_float())$unsqueeze(1L)
 }
 
@@ -142,6 +142,7 @@ pad_patches <- function(patch, lesion_mask_patch, lesion_erode_patch,
 #'
 #' @importFrom ANTsR antsImageRead antsImageWrite antsImageClone
 #' @importFrom utils write.csv
+#' @importFrom extrantsr check_ants
 #' @import torch
 #'
 #' @export
@@ -214,7 +215,7 @@ make_predictions <- function(ants_list = NULL,
     epi <- load_nifti_tensor(ants_list$epi)
     phase <- load_nifti_tensor(ants_list$phase)
 
-    labeled_candidates_ants <- antsImageRead(ants_list$labeled_candidates)
+    labeled_candidates_ants <- check_ants(ants_list$labeled_candidates)
     labeled_candidates <- load_nifti_tensor(ants_list$labeled_candidates)
     eroded_candidates <- load_nifti_tensor(ants_list$eroded_candidates)
   }
@@ -234,7 +235,7 @@ make_predictions <- function(ants_list = NULL,
     epi <- load_nifti_tensor(epi)
     phase <- load_nifti_tensor(phase)
 
-    labeled_candidates_ants <- antsImageRead(labeled_candidates)
+    labeled_candidates_ants <- check_ants(labeled_candidates)
     labeled_candidates <- load_nifti_tensor(labeled_candidates)
     eroded_candidates <- load_nifti_tensor(eroded_candidates)
   }

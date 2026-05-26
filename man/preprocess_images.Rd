@@ -10,7 +10,9 @@ preprocess_images(
   epi_path,
   phase_path,
   output_dir,
-  brainmask_path = NULL,
+  brain_mask_path = NULL,
+  custom_lesion_map = NULL,
+  custom_map_threshold = NULL,
   reorient = TRUE,
   cores = 1,
   verbose = FALSE,
@@ -28,7 +30,11 @@ preprocess_images(
 
 \item{output_dir}{Directory where preprocessed images and results will be saved.}
 
-\item{brainmask_path}{Path to a brain mask (in .nii.gz format, default is NULL).}
+\item{brain_mask_path}{Path to a brain mask (in .nii.gz format, default is NULL).}
+
+\item{custom_lesion_map}{Path to custom lesion probability_map to use instead of MIMoSA output (in .nii.gz format, default is NULL). Lesion probability map must be between 0 and 1. If a custom lesion map is supplied, MIMoSA will be skipped and subsequent lesion mask processing will be performed on the custom map. A desired threshold must be provided to use with the custom lesion map. ALPaCA classification is not guaranteed to generalize to custom lesion maps.}
+
+\item{custom_map_threshold}{Value between 0 to 1 at which to threshold custom_lesion_map. For best chances that ALPaCA will generalize well, a relatively lower threshold (high sensitivity, low specificity) should be chosen. (Default is NULL).}
 
 \item{reorient}{Logical, indicating whether to reorient the images (default is TRUE).}
 
@@ -39,8 +45,8 @@ preprocess_images(
 \item{return_images}{Logical, indicating whether a named list of output images should be returned in addition to writing to disk (default is TRUE)}
 }
 \value{
-Saves the following images to disk: t1_final.nii.gz, flair_final.nii.gz, epi_final.nii.gz, phase_final.nii.gz, prob.nii.gz, labeled_candidates.nii.gz.
-If return_images = TRUE, also returns named list containing the images with names: t1, flair, epi, phase, prob_map, labeled_candidates.nii.gz. Named list can be used as input to \code{make_predictions}. If return_images = FALSE, returns NULL.
+Saves the following images to disk: t1_final.nii.gz, flair_final.nii.gz, epi_final.nii.gz, phase_final.nii.gz, prob.nii.gz, labeled_candidates.nii.gz, eroded_candidates.nii.gz.
+If return_images = TRUE, also returns named list containing the images with names: t1, flair, epi, phase, prob_map, labeled_candidates.nii.gz, and eroded_candidates.nii.gz. Named list can be used as input to \code{make_predictions}. If return_images = FALSE, returns NULL.
 }
 \description{
 This function preprocesses inputs to feed to the neural network. Standard preprocessing includes bias correction, registration, skull-stripping, and intensity normalization to N(0, 1).
