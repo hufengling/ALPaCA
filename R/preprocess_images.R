@@ -51,17 +51,19 @@ preprocess_images <- function(t1_path, flair_path, epi_path, phase_path,
     warning("Output directory does not exist. Making output directory")
     dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   }
-  if (!is.null(custom_lesion_map) & is.null(custom_map_threshold)) {
-    stop("If custom_lesion_map is provided, custom_map_threshold cannot be NULL. Please provide a desired threshold.")
-  }
-  if (!inherits(custom_lesion_map, "character")) {
-    stop("Must provide paths to .nii.gz files.")
-  }
-  if (!file.exists(custom_lesion_map)) {
-    stop("Files are missing or paths or wrong")
-  }
-  if (custom_map_threshold <= 0 || custom_map_threshold >= 1) {
-    stop("custom_map_threshold must be between 0 and 1")
+  if (!is.null(custom_lesion_map)) {
+    if (!inherits(custom_lesion_map, "character")) {
+      stop("Must provide paths to .nii.gz files.")
+    }
+    if (!file.exists(custom_lesion_map)) {
+      stop("Files are missing or paths or wrong")
+    }
+    if (is.null(custom_map_threshold)) {
+      stop("If custom_lesion_map is provided, custom_map_threshold cannot be NULL. Please provide a desired threshold.")
+    }
+    if (custom_map_threshold <= 0 || custom_map_threshold >= 1) {
+      stop("custom_map_threshold must be between 0 and 1")
+    }
   }
   if (!file.exists(output_dir)) {
     warning("Output directory does not exist. Making output directory")
