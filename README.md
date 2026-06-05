@@ -10,16 +10,12 @@
 <div id='id-section1'/>
 
 ## 1. Installation
-The R package uploaded here does NOT contain the pretrained neural network parameters due to GitHub space constraints. The full package can be installed via the following link to **Zenodo**:
+The R package uploaded here does NOT directly contain the pretrained neural network parameters due to GitHub space constraints. In order to download and install the whole package, including neural network parameters, please follow below instructions.
 
-https://zenodo.org/records/17215591
-
-Once downloaded, please unzip the "ALPaCA.zip" package. Then, the package can be installed in R using the following command.
-
-```
-# install.packages("devtools")
-devtools::install_local("/path/to/file/ALPaCA")
-```
+1) Download and unzip the ALPaCA.zip file
+2) Download the models (models_1_5.zip and models_6_10.zip) from the GitHub Release. Because of GitHub file size requirements, these models could not be version-controlled and shipped with the rest of the package.
+3) Unzip both of the model zip files. Each zip file should include 10 models (5 autoencoder_\*.pt and 5 predictor_\*.pt files). Directly copy all 20 .pt files to the inst/extdata/ folder. The final format of this folder should be: inst/extdata/autoencoder_1.pt, inst/extdata/autoencoder_2.pt, etc.
+4) Install the package locally (either using devtools::install_local("/path/to/ALPaCA/folder") within R or `R CMD INSTALL /path/to/ALPaCA/folder` from bash.)
 
 Then, you can load this package via:
 
@@ -27,7 +23,6 @@ Then, you can load this package via:
 library(ALPaCA)
 ```
 
-Alternatively, the GitHub repo (which does not contain the models) can be pulled and the models can be downloaded via the GitHub Release 1.1.X. These models should be unzipped and copied into the ALPaCA/inst/extdata directory. The final extdata directory should contain 20 *.pt files (autoencoder_[1-10].pt and predictor_[1-10].pt)
 ## 2. Background
 
 This GitHub provides the package for "Automatic Segmentation and Classification of Multiple Sclerosis Lesions and Subtypes on Multi-Modal Magnetic Resonance Imaging Using a Convolutional Neural Network." Multiple sclerosis (MS) is a demyelinating, inflammatory disorder characterized by central nervous system lesions detectable via magnetic resonance imaging (MRI). Presence of classical MS lesions and two MS lesion subtypes – paramagnetic rim lesions (PRLs) and central vein sign lesions (CVSs) – are important for MS diagnosis and prognosis. However, manual segmentation of MS lesions, PRLs and CVS lesions is time-consuming and rater-dependent. We propose a fully automated method for segmenting MS lesions and subtypes, called Automated Lesion, PRL, and CVS Analysis network (ALPaCA).
