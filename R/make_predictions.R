@@ -80,7 +80,7 @@ pad_patches <- function(patch, lesion_mask_patch, lesion_erode_patch,
   erode_pad_tensor <- torch_zeros(1L, 24L, 24L, 24L)
 
   starts <- start_ends[c(1L, 3L, 5L)]
-  start_patch <- ifelse(starts < 0L, -starts, 0L)
+  start_patch <- ifelse(starts < 1L, 1L - starts, 0L)
 
   ends <- start_ends[c(2L, 4L, 6L)]
   vol_sizes <- c(t1$size(2L), t1$size(3L), t1$size(4L))
